@@ -36,7 +36,7 @@ def main(data_dir, epochs, arch, model_path=None, resume=False, chkpt_file=None)
     best_prec1 = 0
     if resume:
         chkpt = os.path.join(model_path, chkpt_file)
-        model, arch, optimizer, start_epoch, best_prec1 = load_checkpoint(model, chkpt, optimizer, device)
+        model, optimizer, start_epoch, best_prec1, arch = load_checkpoint(model, chkpt, optimizer, device)
 
     for epoch in range(start_epoch, start_epoch+epochs):
         # train for current epoch
@@ -52,5 +52,6 @@ def main(data_dir, epochs, arch, model_path=None, resume=False, chkpt_file=None)
             save_checkpoint(epoch, arch, model, best_prec1, optimizer, model_path)
 
 if __name__ == '__main__':
-    main('./datasets/tinyimagenet/tiny-imagenet-200', 10, 'mobilenet_trimmed1', './saved_models')
+    #main('./datasets/tinyimagenet/tiny-imagenet-200', 2, 'mobilenet_trimmed1', './saved_models')
+    main('./datasets/tinyimagenet/tiny-imagenet-200', 18, 'mobilenet_trimmed1', './saved_models', True, 'checkpoint_mobilenet_trimmed1_59.375pth.tar')
 

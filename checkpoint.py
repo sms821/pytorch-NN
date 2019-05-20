@@ -27,22 +27,18 @@ def save_checkpoint(epoch, arch, model, best_prec1,optimizer=None, dir='.'):
     str_val = '%.3f'%best_prec1
     filename = 'checkpoint_' + arch + '_' + str(str_val) + 'pth.tar'
     fullpath = os.path.join(dir, filename)
-    print("Saving checkpoint to: %s" % fullpath)
+    print("Saving checkpoint to: {}".format(fullpath))
 
     checkpoint = {}
     checkpoint['epoch'] = epoch
     checkpoint['arch'] = arch
+    checkpoint['best_prec1'] = best_prec1
     checkpoint['state_dict'] = model.state_dict()
     if optimizer is not None:
         checkpoint['optimizer_state_dict'] = optimizer.state_dict()
         checkpoint['optimizer_type'] = type(optimizer)
 
     torch.save(checkpoint, fullpath)
-
-
-def load_lean_checkpoint(model, chkpt_file, model_device=None):
-    return load_checkpoint(model, chkpt_file, model_device=model_device,
-                           lean_checkpoint=True)[0]
 
 
 def get_contents_table(d):
