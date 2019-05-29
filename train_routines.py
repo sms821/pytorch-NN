@@ -2,6 +2,13 @@ import time
 import torch
 import torch.nn as nn
 
+def adjust_learning_rate(optimizer, epoch, LR):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lr = LR * (0.1 ** (epoch // 30))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+
 class AverageMeter(object):
     "Computes and stores the average and current value"
     def __init__(self):
@@ -78,18 +85,34 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
                   epoch, i, len(train_loader), batch_time=batch_time,
                   loss=losses, top1=top1))
 
-def validate(val_loader, model, criterion, epoch, device):
+def validate(val_loader, model, criterion, epoch, device, compute_thresholds=False, hooks=None):
     """ Perform validation on the validation set"""
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
+    top5 = AverageMeter()
 
     # switch to evaluate mode
     model.eval()
+    #print(model)
 
     end = time.time()
+    max_vals = None
+    max_in = torch.zeros(1).to(device)
+    if compute_thresholds:
+        max_vals = torch.zeros(len(hooks)+1).to(device)
     for i, (input, target) in enumerate(val_loader):
         input, target = input.to(device), target.to(device)
+        max_in = torch.max(max_in, torch.max(input))
+
+        '''
+        import numpy
+        for param in model.parameters():
+            print (param.data.size())
+            wts = param.data.cpu().numpy()
+            if len(wts.shape) > 1:
+                print('wt max {}\twt min{}'.format(numpy.amax(wts), numpy.amin(wts)))
+        '''
 
         # compute output
         with torch.no_grad():
@@ -97,9 +120,10 @@ def validate(val_loader, model, criterion, epoch, device):
         loss = criterion(output, target)
 
         # measure accuracy and record loss
-        prec1 = accuracy(output.data, target, topk=(1,))[0]
+        prec1, prec5 = accuracy(output.data, target, topk=(1,5))
         losses.update(loss.data.item(), input.size(0))
         top1.update(prec1.item(), input.size(0))
+        top5.update(prec5.item(), input.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -109,9 +133,20 @@ def validate(val_loader, model, criterion, epoch, device):
             print('Test: [{0}/{1}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
+                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                       i, len(val_loader), batch_time=batch_time, loss=losses,
-                      top1=top1))
+                      top1=top1, top5=top5))
 
-        print(' * Prec@1 {top1.avg:.3f}'.format(top1=top1))
-        return top1.avg
+        if compute_thresholds:
+            #for j in range(len(hooks)):
+            for j, hook in enumerate(hooks):
+                max_vals[j+1] = torch.max(max_vals[j+1], torch.max(hook.output))
+            max_vals[0] = max_in
+
+    print(' * Prec@1 {top1.avg:.3f}'.format(top1=top1))
+    print(' * Prec@5 {top5.avg:.3f}'.format(top5=top5))
+
+    return (top1.avg, max_vals)
+
+

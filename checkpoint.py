@@ -21,6 +21,7 @@ def save_checkpoint(epoch, arch, model, best_prec1, optimizer=None, dir='.', fil
     if not os.path.isdir(dir):
         raise IOError(ENOENT, 'Checkpoint directory does not exist at', os.path.abspath(dir))
 
+    print(best_prec1)
     str_val = '%.3f'%best_prec1
     if not filename:
         filename = 'checkpoint_' + str(str_val) + '.pth.tar'
@@ -32,7 +33,6 @@ def save_checkpoint(epoch, arch, model, best_prec1, optimizer=None, dir='.', fil
     checkpoint['arch'] = arch
     checkpoint['best_prec1'] = best_prec1
     checkpoint['state_dict'] = model.state_dict()
-    print('model state dict: {}'.format(model.state_dict()['fc.weight'].size() ))
     if optimizer is not None:
         checkpoint['optimizer_state_dict'] = optimizer.state_dict()
         checkpoint['optimizer_type'] = type(optimizer)

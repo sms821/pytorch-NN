@@ -12,10 +12,10 @@ def tinyimagenet_get_datasets(data_dir):
     train_dir = os.path.join(data_dir, 'train')
     test_dir = os.path.join(data_dir, 'val')
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.279, 0.274, 0.275])
+                                     std=[0.229, 0.224, 0.225]) # using mean and std of original imagenet dataset
 
     train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(64),
+        transforms.RandomResizedCrop(56),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         normalize,
@@ -24,6 +24,7 @@ def tinyimagenet_get_datasets(data_dir):
     train_dataset = datasets.ImageFolder(train_dir, train_transform)
 
     test_transform = transforms.Compose([
+        transforms.CenterCrop(56),
         transforms.ToTensor(),
         normalize,
     ])
