@@ -54,6 +54,8 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
     end = time.time()
 
     for i, (input, target) in enumerate(train_loader):
+        bs, ncrops, c, h, w = input.size()
+
         # transfer input to appropriate device
         input, target = input.to(device), target.to(device)
 
@@ -61,7 +63,10 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
         optimizer.zero_grad()
 
         # compute output
-        output = model(input)
+        #output = model(input)
+        output = model(input.view(-1,c,h,w)) # fuse batch size and ncrops
+        output_avg = output.view(bs, ncrops, -1).mean(1) #avg over crops
+        output = output_avg
         loss = criterion(output, target)
 
         # measure accuracy and record loss
@@ -138,9 +143,26 @@ def validate(val_loader, model, criterion, epoch, device, compute_thresholds=Fal
                       i, len(val_loader), batch_time=batch_time, loss=losses,
                       top1=top1, top5=top5))
 
+        index = None
         if compute_thresholds:
             #for j in range(len(hooks)):
             for j, hook in enumerate(hooks):
+                '''
+                if len(hook.output.size()) > 2:
+                    index = (0,0,3,0)
+                else:
+                    index = (0,0)
+                #print(type(hook.input[0]))
+                layer_out = hook.output[index]
+                if len(hook.input[0].size()) > 2:
+                    index = (0,0,3,0)
+                else:
+                    index = (0,0)
+                layer_in = hook.input[0][index]
+                if j > 10:
+                    break
+                print(j, layer_in, layer_out, hook.input[0].size(), hook.output.size())
+                '''
                 max_vals[j+1] = torch.max(max_vals[j+1], torch.max(hook.output))
             max_vals[0] = max_in
 

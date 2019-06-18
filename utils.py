@@ -25,17 +25,33 @@ class IntermediateLayers(torch.nn.Module):
 '''
 
 def convert_to_spiking(model, spiking):
+    bn_params = []
+    for layer in model.modules():
+        #print (layer.state_dict().keys())
+        if isinstance(layer, torch.nn.BatchNorm2d):
+            bn_params.append(layer)
+            #print('gb', layer.weight.shape, layer.bias.shape)
+            #print('mv', layer.running_mean.shape, layer.running_var.shape)
+            #print(layer.num_batches_tracked)
+
     all_wts = []
     for param in model.parameters():
+        #print(param)
         wts = param.data
         if len(wts.size()) > 1:
             all_wts.append(wts)
-    #print('no of wt layers: {}'.format(len(all_wts)))
+    print('no of wt layers: {}'.format(len(all_wts)))
 
-    l = 0
+    b, l = 0, 0
     for layer in spiking.modules():
+        #if isinstance(layer, torch.nn.BatchNorm2d):
+        #    layer = bn_params[b]
+        #    b += 1
+        #    print(layer.weight.shape, layer.bias.shape)
+        #    print(layer.running_mean.shape, layer.running_var.shape)
+
         if isinstance(layer, torch.nn.Conv2d) or isinstance(layer, torch.nn.Linear):
-            #print(torch.min(all_wts[l]), torch.max(all_wts[l]))
+            print(torch.min(all_wts[l]), torch.max(all_wts[l]))
             layer.weight.data = all_wts[l]
             l += 1
     return spiking

@@ -68,20 +68,34 @@ def load_checkpoint(model, chkpt_file, optimizer=None, model_device=None):
         raise IOError(ENOENT, 'Could not find a checkpoint file at', chkpt_file)
 
     print("=> loading checkpoint %s", chkpt_file)
-    #checkpoint = torch.load(chkpt_file, map_location=lambda storage, loc: storage)
-    checkpoint = torch.load(chkpt_file)
+    checkpoint = torch.load(chkpt_file, map_location=lambda storage, loc: storage)
+    #checkpoint = torch.load(chkpt_file)
     print('checkpoint contents'.format(checkpoint.keys()))
 
     print('=> Checkpoint contents:\n{}\n'.format(get_contents_table(checkpoint)))
+    #if 'state_dict' not in checkpoint:
+    #    raise ValueError("Checkpoint must contain the model parameters under the key 'state_dict'")
+
+    if 'epoch' in checkpoint:
+        start_epoch = checkpoint['epoch']
+    else:
+        start_epoch = 0
+
+    #model.module.load_state_dict(checkpoint['state_dict'])
+    #model.load_state_dict(checkpoint['state_dict'], strict=False)
     if 'state_dict' not in checkpoint:
-        raise ValueError("Checkpoint must contain the model parameters under the key 'state_dict'")
+        model.load_state_dict(checkpoint, strict=False)
+    else:
+        model.load_state_dict(checkpoint['state_dict'], strict=False)
 
-    start_epoch = checkpoint['epoch']
-
-    model.load_state_dict(checkpoint['state_dict'])
     if model_device is not None:
         model.to(model_device)
 
-    best_prec1 = checkpoint['best_prec1']
-    arch = checkpoint['arch']
+    best_prec1 = 0
+    if 'best_prec1' in checkpoint:
+        best_prec1 = checkpoint['best_prec1']
+
+    arch = ''
+    if 'arch' in checkpoint:
+        arch = checkpoint['arch']
     return (model, optimizer, start_epoch+1, best_prec1, arch)
